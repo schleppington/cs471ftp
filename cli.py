@@ -2,8 +2,38 @@
 
 import sys
 
-# The length of the length string
+# The length of the length string for sending files
 LEN_LEN = 100
+
+# The length of a command string
+CMD_LEN = 100
+
+#######               Command String Info            ###################
+# [0-4 port number]:[6-8 command]:[9-99 cmd arg (filename)] 
+# port number will be padded with 0's infront of it if len < 5
+# ls command will be padded with a space after it 
+# cmd arg will be padded with #'s after the text
+########################################################################
+
+
+########################################################################
+# getCmdStr - build the command string to send
+# @param - int - port - the port for the server to listen on
+# @param - str - cmd - the command that was executed
+# @param - str - arg - the file name or blank if ls command
+# @return - str- the resulting string to send
+########################################################################
+def getCmdStr(port, cmd, arg=""):
+    strPort = str(port)
+    while len(strPort) < 5:
+        strPort = "0" + strPort
+    if cmd == "ls":
+        cmd = "ls "
+    while len(arg) < 90:
+        arg = arg + "#"
+        
+    result = strPort + ":" + cmd + ":" + arg
+    return result
 
 ########################################################################
 # Sends all data 
@@ -53,23 +83,70 @@ def getFileInfo(filepath):
     except:
         return None
     
+########################################################################
+# openDataSocket - gets information about a file
+# @param port - Optional - the port to listen on
+#             - Default = 0, gets an emphirical port
+# #return - Tuple - (socket object, port)	
+#         - None if invalid file path
+########################################################################
+def openDataSocket(port=0):
+    try:
+        listSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        listSocket.bind('',port)
+        addr = listSocket.getsockname()
+        port = addr[1]
+        return (listSocket, port)
+    except:
+        return None
+    
 
-def main(server, port):
-    	
-    #Host to connect to
-    host = sys.argv[1]
+########################################################################
+# Receive data
+# Receives the specified amount of data
+# @param sock - the socket to receive the data from
+# @param size - how much to receive
+# @return - the received data
+########################################################################
+def recvData(sock, size):
+	
+	# The buffer to store the data
+	data = ""
+	
+	# Keep receiving until all is received
+	while size > len(data):
+		
+		# Receive as much as you can
+		data += sock.recv(size - len(data))
+	
+	# Return the received data
+	return data
 
-    #Port to send to
-    port = int(sys.argv[2])    
+########################################################################
+# Recieves the size
+# @param sock - the socket over which to receive the size
+# @return - the received size
+########################################################################
+def recvSize(sock):
+
+	# Get the string size
+	strSize = recvData(sock, LEN_LEN)
+		
+	# Conver the size to an integer and return 
+	return int(strSize)
+
+
+
+def main(server, port):  
         
     #connect to host - command socket
-    conSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    cmdSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     
     try:
         #convert host input to ip    
         addrinfo = socket.getaddrinfo(host, port)
         host = addrinfo[0][4][0]        
-        conSocket.connect((host,port))
+        cmdSocket.connect((host,port))
     except:
         print "Error connecting to host"
         exit(0)
@@ -77,15 +154,73 @@ def main(server, port):
     #listen for input commands
     while(True):
         cmd = raw_input("ftp> ")
-        
-        if cmd[0:3] == 'get':
-            pass
+
+        if cmd[0:2] == 'ls':
+            #init objects
+            sockinfo = openDataSocket()
+            datasock = sockinfo[0]
+            dataport = sockinfo[1]
+            strcmd = getCmdStr(port, 'ls')
+            #send the command
+            sendData(cmdSocket, strcmd)  
+            
+            #listen for reply
+            datasock.listen(1)           
+            client, address = datasock.accept()
+            
+            #get return data size
+            datalen = recvSize(datasock)
+            # The size of the chunk
+            chunkSize = 100
+            
+            # The number of bytes to receive right now
+            numToRecv = 0
+            
+            # The total number of bytes received
+            totalNumRecv = 0
+            
+            #string to hold entire list of file names returned
+            strfilelist
+            
+            while totalNumRecv < datalen:	
+                # By default receive chunkSize bytes	
+                numToRecv = chunkSize                
+                # Is this the last chunk?
+                if datalen - totalNumRecv < chunkSize:
+                    numToRecv = datalen - totalNumRecv	                
+                # Receive the amount of data
+                data = recvData(client, numToRecv)                 
+                # Save the data
+                strfilelist += data              
+                # Update the total number of bytes received
+                totalNumRecv += len(data)
+            
+            #convert string to a list
+            lstFiles = list(strfilelist)
+            
+            #print the list
+            for fn in lstFiles:
+                print fn
+                  
+        elif cmd[0:3] == 'get':
+            filename = cmd[4:]
+            sockinfo = openDataSocket()
+            datasock = sockinfo[0]
+            dataport = sockinfo[1]
+            strcmd = getCmdStr(port, 'get', filename)
+            sendData(cmdSocket, strcmd)
+            
         elif cmd[0:3] == 'put':
-            pass
-        elif cmd[0:2] == 'ls':
-            pass
-        elif cmd[0:3] == 'bye' or cmd[0:4] == 'exit':
-            print 'bye'
+            filename = cmd[4:]
+            sockinfo = openDataSocket()
+            datasock = sockinfo[0]
+            dataport = sockinfo[1]
+            strcmd = getCmdStr(port, 'put', filename)
+            sendData(cmdSocket, strcmd)
+            
+        elif cmd[0:4] == 'exit':
+            cmdSocket.close()
+            print 'ftp> Closing connection, Bye'
             exit(0)
         else:
             print "Unknown command"
