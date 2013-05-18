@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import socket
 
 # The length of the length string for sending files
 LEN_LEN = 100
@@ -12,7 +13,7 @@ CMD_LEN = 100
 # [0-4 port number]:[6-8 command]:[10-99 cmd arg (filename)] 
 # port number will be padded with 0's infront of it if len < 5
 # ls command will be padded with a space after it 
-# cmd arg will be padded with #'s after the text
+# cmd arg will be padded with $'s after the text
 ########################################################################
 
 
@@ -30,7 +31,7 @@ def getCmdStr(port, cmd, arg=""):
     if cmd == "ls":
         cmd = "ls "
     while len(arg) < 90:
-        arg = arg + "#"
+        arg = arg + "$"
         
     result = strPort + ":" + cmd + ":" + arg
     return result
@@ -137,15 +138,18 @@ def recvSize(sock):
 
 
 
+########################################################################
+#                               Main                                   # 
+########################################################################
 def main(server, port):  
         
     #connect to host - command socket
     cmdSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     
     try:
-        #convert host input to ip    
-        addrinfo = socket.getaddrinfo(host, port)
-        host = addrinfo[0][4][0]        
+        #convert host input to ip
+        addrinfo = socket.getaddrinfo(server, port)
+        host = addrinfo[0][4][0]  
         cmdSocket.connect((host,port))
     except:
         print "Error connecting to host"
@@ -170,17 +174,15 @@ def main(server, port):
             
             #get return data size
             datalen = recvSize(datasock)
+            
             # The size of the chunk
-            chunkSize = 100
-            
+            chunkSize = 100            
             # The number of bytes to receive right now
-            numToRecv = 0
-            
+            numToRecv = 0            
             # The total number of bytes received
-            totalNumRecv = 0
-            
+            totalNumRecv = 0            
             #string to hold entire list of file names returned
-            strfilelist
+            strfilelist = ""
             
             while totalNumRecv < datalen:	
                 # By default receive chunkSize bytes	
@@ -223,7 +225,7 @@ def main(server, port):
             print 'ftp> Closing connection, Bye'
             exit(0)
         else:
-            print "Unknown command"
+            print "Error: Unknown command"
     
     
     
@@ -233,7 +235,7 @@ if __name__ == "__main__":
     if len(sys.argv) != 3:
         print "Usage: ", sys.argv[0], " <Server IP> <Server Port>"
         exit(0)
-    main(sys.argv[1], sys.argv[2])
+    main(sys.argv[1], int(sys.argv[2]))
 
 
 
