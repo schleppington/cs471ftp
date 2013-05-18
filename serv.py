@@ -140,6 +140,7 @@ def main(port):
         #ERROR HERE: need to figure out how to wait for the command to come in
         # before we call this function...
         cmdinfo = recvCmd(listenSocket)
+            
         #connect the datasocket to the client
         dataSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         dataSocket.connect(address, cmdinfo['port'])

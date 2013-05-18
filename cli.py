@@ -94,7 +94,7 @@ def getFileInfo(filepath):
 def openDataSocket(port=0):
     try:
         listSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        listSocket.bind('',port)
+        listSocket.bind(('',port))
         addr = listSocket.getsockname()
         port = addr[1]
         return (listSocket, port)
@@ -162,6 +162,7 @@ def main(server, port):
         if cmd[0:2] == 'ls':
             #init objects
             sockinfo = openDataSocket()
+            print sockinfo
             datasock = sockinfo[0]
             dataport = sockinfo[1]
             strcmd = getCmdStr(port, 'ls')
