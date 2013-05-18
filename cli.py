@@ -9,7 +9,7 @@ LEN_LEN = 100
 CMD_LEN = 100
 
 #######               Command String Info            ###################
-# [0-4 port number]:[6-8 command]:[9-99 cmd arg (filename)] 
+# [0-4 port number]:[6-8 command]:[10-99 cmd arg (filename)] 
 # port number will be padded with 0's infront of it if len < 5
 # ls command will be padded with a space after it 
 # cmd arg will be padded with #'s after the text
