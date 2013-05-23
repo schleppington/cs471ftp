@@ -2,6 +2,9 @@
 
 import sys
 import socket
+import os
+from os import listdir
+from os.path import isfile, join
 
 # The length of the length string for sending files
 LEN_LEN = 100
@@ -111,9 +114,6 @@ def recvCmd(sock):
     try:
         strcmd = recvData(sock, CMD_LEN)
         lstcmd = strcmd.split(":")
-        if cmd.length != 2:
-            print "Error incorrect command format recieved"
-            exit(0)
         cmd = {}
         cmd['port'] = int(lstcmd[0])
         cmd['cmd'] = lstcmd[1]
@@ -124,38 +124,61 @@ def recvCmd(sock):
 
 
 ########################################################################
+# Recieves the command from the client
+# @return - list - filenames available in the current directory
+########################################################################
+def getFileList():
+    files = [f for f in listdir(os.getcwd()) if isfile(join(os.getcwd(),f)) ]
+    return files
+
+
+########################################################################
 #                               Main                                   # 
 ########################################################################
 def main(port):  
     #number of parallel connections
     backlog = 10
     #bind the socket and listen for new connections
-    listenSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    listenSocket.bind(('',port))
-    listenSocket.listen(backlog)
+    cmdSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    cmdSocket.bind(('',port))
+    cmdSocket.listen(backlog)
+    closeconn = False
 
-    #listen forever
     while True:
-        client, address = listenSocket.accept()
-        #ERROR HERE: need to figure out how to wait for the command to come in
-        # before we call this function...
-        cmdinfo = recvCmd(listenSocket)
+        client, address = cmdSocket.accept()
+        print "Connection opend with: " + str(address)
+
+        #listen forever
+        while closeconn == False:
+            cmdinfo = recvCmd(client)        
             
-        #connect the datasocket to the client
-        dataSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        dataSocket.connect(address, cmdinfo['port'])
-        
-        if cmdinfo['cmd'] == "ls ":
-            print "ls command"
-        elif cmdinfo['cmd'] == "put":
-            print "put command"
-        elif cmdinfo['cmd'] == "get":
-            print "get command"
-        else:
-            print "Error, unknown command"
-        
-        dataSocket.close()
-        
+            #connect the datasocket to the client
+            dataSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            datasockinfo = (address[0], cmdinfo['port'])
+            print datasockinfo
+            dataSocket.connect(datasockinfo)
+            
+            if cmdinfo['cmd'] == "ls ":
+                print "ls command"
+                files = getFileList()
+                strfiles = str(files)
+                lenfiles = len(strfiles)
+                sendSize(dataSocket, lenfiles)
+                sendData(dataSocket, strfiles)
+            elif cmdinfo['cmd'] == "put":
+                print "put command"
+            elif cmdinfo['cmd'] == "get":
+                print "get command"
+            elif cmdinfo['cmd'] == "exit":
+                print "exit command"
+                client.close()
+                closeconn = True
+            else:
+                print "Error, unknown command"
+            
+            dataSocket.close()
+        print "connection closed"
+            
     return
     
 if __name__ == "__main__":

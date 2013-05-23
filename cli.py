@@ -161,20 +161,26 @@ def main(server, port):
 
         if cmd[0:2] == 'ls':
             #init objects
-            sockinfo = openDataSocket()
-            print sockinfo
-            datasock = sockinfo[0]
-            dataport = sockinfo[1]
-            strcmd = getCmdStr(port, 'ls')
+            
+            datasock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            datasock.bind(('',0))
+            addr = datasock.getsockname()
+            dataport = addr[1]
+            datasock.listen(1) 
+        
+            #sockinfo = openDataSocket()
+            #datasock = sockinfo[0]
+            #dataport = sockinfo[1]
+            
+            strcmd = getCmdStr(dataport, 'ls')
             #send the command
             sendData(cmdSocket, strcmd)  
             
-            #listen for reply
-            datasock.listen(1)           
+            #listen for reply          
             client, address = datasock.accept()
             
             #get return data size
-            datalen = recvSize(datasock)
+            datalen = recvSize(client)
             
             # The size of the chunk
             chunkSize = 100            
@@ -199,7 +205,7 @@ def main(server, port):
                 totalNumRecv += len(data)
             
             #convert string to a list
-            lstFiles = list(strfilelist)
+            lstFiles = strfilelist.replace("[","").replace("]","").replace("'","").replace(" ","").split(",")
             
             #print the list
             for fn in lstFiles:
