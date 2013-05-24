@@ -54,7 +54,7 @@ def sendData(sock, data):
 		numSent = sock.send(data[totalNumSent:])		
 		# Update how many bytes were sent thus far
 		totalNumSent += numSent
-	
+
 	return totalNumSent
 
 
@@ -115,18 +115,17 @@ def openDataSocket(port=0):
 # @return - the received data
 ########################################################################
 def recvData(sock, size):
-	
 	# The buffer to store the data
-	data = ""
-	
+    data = ""
+
 	# Keep receiving until all is received
-	while size > len(data):
-		
+    while size > len(data):
+
 		# Receive as much as you can
-		data += sock.recv(size - len(data))
-	
+        data += sock.recv(size - len(data))
+
 	# Return the received data
-	return data
+    return data
 
 
 ########################################################################
@@ -135,12 +134,11 @@ def recvData(sock, size):
 # @return - the received size
 ########################################################################
 def recvSize(sock):
+    # Get the string size
+    strSize = recvData(sock, LEN_LEN)
 
-	# Get the string size
-	strSize = recvData(sock, LEN_LEN)
-		
-	# Conver the size to an integer and return 
-	return int(strSize)
+    # Conver the size to an integer and return 
+    return int(strSize)
 
 
 ########################################################################
@@ -171,11 +169,7 @@ def main(server, port):
             datasock.bind(('',0))
             addr = datasock.getsockname()
             dataport = addr[1]
-            datasock.listen(1) 
-        
-            #sockinfo = openDataSocket()
-            #datasock = sockinfo[0]
-            #dataport = sockinfo[1]
+            datasock.listen(1)
             
             strcmd = getCmdStr(dataport, 'ls')
             #send the command
@@ -196,14 +190,14 @@ def main(server, port):
             #string to hold entire list of file names returned
             strfilelist = ""
             
-            while totalNumRecv < datalen:	
-                # By default receive chunkSize bytes	
-                numToRecv = chunkSize                
+            while totalNumRecv < datalen:
+                # By default receive chunkSize bytes
+                numToRecv = chunkSize
                 # Is this the last chunk?
                 if datalen - totalNumRecv < chunkSize:
-                    numToRecv = datalen - totalNumRecv	                
+                    numToRecv = datalen - totalNumRecv
                 # Receive the amount of data
-                data = recvData(client, numToRecv)                 
+                data = recvData(client, numToRecv)
                 # Save the data
                 strfilelist += data              
                 # Update the total number of bytes received
@@ -217,13 +211,50 @@ def main(server, port):
                 print fn
                   
         elif cmd[0:3] == 'get':
+            #init objects
+            datasock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            datasock.bind(('',0))
+            addr = datasock.getsockname()
+            dataport = addr[1]
+            datasock.listen(1)
+
+            # Get the file name the user specified.
             filename = cmd[4:]
-            sockinfo = openDataSocket()
-            datasock = sockinfo[0]
-            dataport = sockinfo[1]
-            strcmd = getCmdStr(port, 'get', filename)
+
+            # Since we know the filename, open the file.
+            file = open(filename, "w")
+
+            # Tell the server to send the file.
+            strcmd = getCmdStr(dataport, 'get', filename)
             sendData(cmdSocket, strcmd)
-            
+
+            #listen for reply          
+            client, address = datasock.accept()
+
+            # Receive the size of the file from the server.
+            fileSize = recvSize(client)
+
+            chunkSize   = 100
+            bytesRecvd    = 0
+            while (bytesRecvd < fileSize):
+                # By default receive chunkSize bytes
+                numToRecv = chunkSize
+
+                # Is this the last chunk?
+                if fileSize - bytesRecvd < chunkSize:
+                    numToRecv = fileSize - bytesRecvd
+                # Receive the amount of data
+                data = recvData(client, numToRecv)
+
+                # Save the data
+                file.write(data)
+
+                # Update the total number of bytes received
+                bytesRecvd += len(data)
+
+            # Transfer complete, close the file.
+            file.close()
+
         elif cmd[0:3] == 'put':
             filename = cmd[4:]
             sockinfo = openDataSocket()
@@ -244,7 +275,6 @@ def main(server, port):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print "Usage: ", sys.argv[0], " <Server IP> <Server Port>"
+        print "Usage: ", sys.argv[0], " <Server Host> <Server Port>"
         exit(0)
     main(sys.argv[1], int(sys.argv[2]))
-
