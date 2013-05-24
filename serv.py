@@ -39,7 +39,8 @@ def sendData(sock, data):
 		totalNumSent += numSent
 	
 	return totalNumSent
-	
+
+
 ########################################################################
 # Sends the size 
 # @param sock - the socket to send it over
@@ -53,6 +54,7 @@ def sendSize(sock, size):
 		strSize = "0" + strSize	
 	# Send the size
 	sendData(sock, strSize)
+
 
 ########################################################################
 # getFileInfo - gets information about a file
@@ -68,8 +70,7 @@ def getFileInfo(filepath):
         return (fp, size, filename)
     except:
         return None
-    
-    
+
 
 ########################################################################
 # Receive data
@@ -92,6 +93,7 @@ def recvData(sock, size):
 	# Return the received data
 	return data
 
+
 ########################################################################
 # Recieves the size
 # @param sock - the socket over which to receive the size
@@ -105,6 +107,7 @@ def recvSize(sock):
 	# Conver the size to an integer and return 
 	return int(strSize)
 
+
 ########################################################################
 # Recieves the command from the client
 # @param sock - the socket over which to receive the size
@@ -117,7 +120,7 @@ def recvCmd(sock):
         cmd = {}
         cmd['port'] = int(lstcmd[0])
         cmd['cmd'] = lstcmd[1]
-        cmd['filename'] = lstcmd[2]
+        cmd['filename'] = lstcmd[2].replace("$", "")
         return cmd
     except:
         return None
@@ -169,8 +172,8 @@ def main(port):
                 print "put command"
             elif cmdinfo['cmd'] == "get":
                 print "get command"
-            elif cmdinfo['cmd'] == "exit":
-                print "exit command"
+            elif cmdinfo['cmd'] == "quit":	#Do we need this? The client never sends this to the server...
+                print "quit command"
                 client.close()
                 closeconn = True
             else:
