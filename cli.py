@@ -34,7 +34,9 @@ def getCmdStr(port, cmd, arg=""):
         arg = arg + "$"
         
     result = strPort + ":" + cmd + ":" + arg
+
     return result
+
 
 ########################################################################
 # Sends all data 
@@ -54,7 +56,8 @@ def sendData(sock, data):
 		totalNumSent += numSent
 	
 	return totalNumSent
-	
+
+
 ########################################################################
 # Sends the size 
 # @param sock - the socket to send it over
@@ -68,6 +71,7 @@ def sendSize(sock, size):
 		strSize = "0" + strSize	
 	# Send the size
 	sendData(sock, strSize)
+
 
 ########################################################################
 # getFileInfo - gets information about a file
@@ -83,7 +87,8 @@ def getFileInfo(filepath):
         return (fp, size, filename)
     except:
         return None
-    
+
+
 ########################################################################
 # openDataSocket - gets information about a file
 # @param port - Optional - the port to listen on
@@ -100,7 +105,7 @@ def openDataSocket(port=0):
         return (listSocket, port)
     except:
         return None
-    
+
 
 ########################################################################
 # Receive data
@@ -123,6 +128,7 @@ def recvData(sock, size):
 	# Return the received data
 	return data
 
+
 ########################################################################
 # Recieves the size
 # @param sock - the socket over which to receive the size
@@ -135,7 +141,6 @@ def recvSize(sock):
 		
 	# Conver the size to an integer and return 
 	return int(strSize)
-
 
 
 ########################################################################
@@ -227,23 +232,19 @@ def main(server, port):
             strcmd = getCmdStr(port, 'put', filename)
             sendData(cmdSocket, strcmd)
             
-        elif cmd[0:4] == 'exit':
+        elif cmd[0:4] == 'quit':
             cmdSocket.close()
             print 'ftp> Closing connection, Bye'
             exit(0)
         else:
             print "Error: Unknown command"
-    
-    
-    
+
     return
-    
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print "Usage: ", sys.argv[0], " <Server IP> <Server Port>"
         exit(0)
     main(sys.argv[1], int(sys.argv[2]))
-
-
-
 
