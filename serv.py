@@ -20,7 +20,6 @@ CMD_LEN = 100
 ########################################################################
 
 
-
 ########################################################################
 # Sends all data 
 # @param sock - the socket to send the data over
@@ -37,7 +36,7 @@ def sendData(sock, data):
 		numSent = sock.send(data[totalNumSent:])		
 		# Update how many bytes were sent thus far
 		totalNumSent += numSent
-	
+
 	return totalNumSent
 
 
@@ -80,16 +79,16 @@ def getFileInfo(filepath):
 # @return - the received data
 ########################################################################
 def recvData(sock, size):
-	
+
 	# The buffer to store the data
 	data = ""
-	
+
 	# Keep receiving until all is received
 	while size > len(data):
-		
+
 		# Receive as much as you can
 		data += sock.recv(size - len(data))
-	
+
 	# Return the received data
 	return data
 
@@ -103,7 +102,7 @@ def recvSize(sock):
 
 	# Get the string size
 	strSize = recvData(sock, LEN_LEN)
-		
+
 	# Conver the size to an integer and return 
 	return int(strSize)
 
@@ -163,27 +162,41 @@ def main(port):
             
             if cmdinfo['cmd'] == "ls ":
                 print "ls command"
+
                 files = getFileList()
                 strfiles = str(files)
                 lenfiles = len(strfiles)
+
                 sendSize(dataSocket, lenfiles)
                 sendData(dataSocket, strfiles)
+
             elif cmdinfo['cmd'] == "put":
                 print "put command"
+
             elif cmdinfo['cmd'] == "get":
                 print "get command"
-            elif cmdinfo['cmd'] == "quit":	#Do we need this? The client never sends this to the server...
+
+                # Get and send the file size.
+                fileSize = os.stat(cmdinfo['filename']).st_size
+                sendSize(dataSocket, fileSize)
+
+                # Get and send the file's contents.
+                file = open(cmdinfo['filename'],'r')
+                sendData(dataSocket, file.read())
+
+            elif cmdinfo['cmd'] == "quit":
                 print "quit command"
                 client.close()
                 closeconn = True
             else:
                 print "Error, unknown command"
-            
+
             dataSocket.close()
         print "connection closed"
             
     return
-    
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print "Usage: ", sys.argv[0], " <Server Port>"
