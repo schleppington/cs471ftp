@@ -45,7 +45,7 @@ def sendData(sock, data):
 # @param sock - the socket to send it over
 # @param size - the size to send
 ########################################################################
-def sendSize(sock, size):	
+def sendSize(sock, size):
 	# Convert the size into string
 	strSize = str(size) 	
 	# Padd the size with leading 0's
@@ -61,7 +61,7 @@ def sendSize(sock, size):
 # #return - Tuple - (file pointer, file size, file name)	
 #         - None if invalid file path
 ########################################################################
-def getFileInfo(filepath):
+def getFileInfo(path):
     try:
         fp = open(path, 'rb')
         size = os.path.getsize(path)
@@ -176,13 +176,19 @@ def main(port):
             elif cmdinfo['cmd'] == "get":
                 print "get command"
 
-                # Get and send the file size.
-                fileSize = os.stat(cmdinfo['filename']).st_size
-                sendSize(dataSocket, fileSize)
+                fileInfo = getFileInfo(cmdinfo['filename'])
 
-                # Get and send the file's contents.
-                file = open(cmdinfo['filename'],'r')
-                sendData(dataSocket, file.read())
+                if fileInfo:
+                    # Send the file size.
+                    sendSize(dataSocket, fileInfo[1])
+
+                    # Send the file's contents.
+                    sendData(dataSocket, fileInfo[0].read())
+
+                    # Close the file.
+                    fileInfo[0].close()
+                else:
+                    sendSize(dataSocket, -1)
 
             elif cmdinfo['cmd'] == "quit":
                 print "quit command"
