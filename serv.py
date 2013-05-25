@@ -168,22 +168,26 @@ def main(port):
 
                 sendSize(dataSocket, lenfiles)
                 sendData(dataSocket, strfiles)
+                dataSocket.close()
 
             elif cmdinfo['cmd'] == "put":
                 print "put command"
                 #Create new file with given name
                 f = open(cmdinfo['filename'], 'w')
                 print f
-                
+                """
                 datasock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 print datasock
                 print cmdinfo['port']
-                datasock.bind(('',cmdinfo['port']))
+                print address
+                datasock.bind(('',0))
+                addr=datasock.getsockname()
+                dataport = addr[1]
                 datasock.listen(1)
-                
+                print "listening"
                 client, address = datasock.accept()
                 print client
-                
+                """
                 
                 #Receive file size
                 size=recvSize(client)
@@ -204,12 +208,12 @@ def main(port):
                         data = recvData(client, numToRecv)
                         print data
                         # Save the data
-                        file.write(data)
+                        f.write(data)
                         
                         # Update the total number of bytes received
                         bytesRecvd += len(data)
                 # Transfer complete, close the file.
-                file.close()
+                f.close()
 
             elif cmdinfo['cmd'] == "get":
                 #connect the datasocket to the client
@@ -226,15 +230,15 @@ def main(port):
                 # Get and send the file's contents.
                 file = open(cmdinfo['filename'],'r')
                 sendData(dataSocket, file.read())
+                dataSocket.close()
 
             elif cmdinfo['cmd'] == "quit":
                 print "quit command"
                 client.close()
                 closeconn = True
+                dataSocket.close()
             else:
                 print "Error, unknown command"
-
-            dataSocket.close()
         print "connection closed"
             
     return
