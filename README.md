@@ -2,4 +2,4 @@ cs471ftp
 ========
 Todo
   - Push
-  - Answer remaining questions in questions.txt
+  - Design the protocol
