@@ -1,6 +1,5 @@
 cs471ftp
 ========
 Todo
-  -Push
-  -get
-  -ls
+  - Push
+  - Answer remaining questions in questions.txt
