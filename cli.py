@@ -266,11 +266,26 @@ def main(server, port):
 
         elif cmd[0:3] == 'put':
             filename = cmd[4:]
-            sockinfo = openDataSocket()
-            datasock = sockinfo[0]
-            dataport = sockinfo[1]
-            strcmd = getCmdStr(port, 'put', filename)
-            sendData(cmdSocket, strcmd)
+            file=open(filename)
+            if not file:
+                print "Please enter a valid filname"
+            else:
+                datasock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                print "datasock created"
+                addr = datasock.getsockname()
+                dataport = addr[1]
+                
+                strcmd = getCmdStr(dataport, 'put', filename)
+                sendData(cmdSocket, strcmd)
+                
+                datasock.connect((host,dataport))
+                print "connected"
+                
+                print sys.getsizeof(file)
+                sendSize(datasock,os.stat(filename).st_size)
+                print "sent size"
+                sendData(datasock, file.read())
+                print "send data"
             
         elif cmd[0:4] == 'quit':
             cmdSocket.close()
