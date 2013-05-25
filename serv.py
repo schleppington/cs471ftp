@@ -45,7 +45,7 @@ def sendData(sock, data):
 # @param sock - the socket to send it over
 # @param size - the size to send
 ########################################################################
-def sendSize(sock, size):
+def sendSize(sock, size):	
 	# Convert the size into string
 	strSize = str(size) 	
 	# Padd the size with leading 0's
@@ -61,7 +61,7 @@ def sendSize(sock, size):
 # #return - Tuple - (file pointer, file size, file name)	
 #         - None if invalid file path
 ########################################################################
-def getFileInfo(path):
+def getFileInfo(filepath):
     try:
         fp = open(path, 'rb')
         size = os.path.getsize(path)
@@ -152,15 +152,14 @@ def main(port):
 
         #listen forever
         while closeconn == False:
-            cmdinfo = recvCmd(client)        
-            
-            #connect the datasocket to the client
-            dataSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            datasockinfo = (address[0], cmdinfo['port'])
-            print datasockinfo
-            dataSocket.connect(datasockinfo)
+            cmdinfo = recvCmd(client)
             
             if cmdinfo['cmd'] == "ls ":
+                #connect the datasocket to the client
+                dataSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                datasockinfo = (address[0], cmdinfo['port'])
+                print datasockinfo
+                dataSocket.connect(datasockinfo)
                 print "ls command"
 
                 files = getFileList()
@@ -172,23 +171,62 @@ def main(port):
 
             elif cmdinfo['cmd'] == "put":
                 print "put command"
+                    #Create new file with given name
+                    f = open(cmdinfo['filename'], 'w')
+                    print f
+                    
+                    datasock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    print datasock
+                    print cmdinfo['port']
+                    datasock.bind(('',cmdinfo['port']))
+                    datasock.listen(1)
+                    
+                    client, address = datasock.accept()
+                    print client
+                    
+                    
+                    #Receive file size
+                    size=recvSize(client)
+                    print size
+                    
+                    chunkSize = 100
+                    bytesRecvd = 0
+                    
+                    while (bytesRecvd < size):
+                        # By default receive chunkSize bytes
+                        numToRecv = chunkSize
+                        
+                        # Is this the last chunk?
+                        if size - bytesRecvd < chunkSize:
+                            numToRecv = size - bytesRecvd
+                            print numToRecv
+                            # Receive the amount of data
+                            data = recvData(client, numToRecv)
+                            print data
+                            # Save the data
+                            file.write(data)
+                            
+                            # Update the total number of bytes received
+                            bytesRecvd += len(data)
+                    
+                    # Transfer complete, close the file.
+                    file.close()
 
             elif cmdinfo['cmd'] == "get":
+                #connect the datasocket to the client
+                dataSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                datasockinfo = (address[0], cmdinfo['port'])
+                print datasockinfo
+                dataSocket.connect(datasockinfo)
                 print "get command"
 
-                fileInfo = getFileInfo(cmdinfo['filename'])
+                # Get and send the file size.
+                fileSize = os.stat(cmdinfo['filename']).st_size
+                sendSize(dataSocket, fileSize)
 
-                if fileInfo:
-                    # Send the file size.
-                    sendSize(dataSocket, fileInfo[1])
-
-                    # Send the file's contents.
-                    sendData(dataSocket, fileInfo[0].read())
-
-                    # Close the file.
-                    fileInfo[0].close()
-                else:
-                    sendSize(dataSocket, -1)
+                # Get and send the file's contents.
+                file = open(cmdinfo['filename'],'r')
+                sendData(dataSocket, file.read())
 
             elif cmdinfo['cmd'] == "quit":
                 print "quit command"
