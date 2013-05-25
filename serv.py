@@ -171,46 +171,45 @@ def main(port):
 
             elif cmdinfo['cmd'] == "put":
                 print "put command"
-                    #Create new file with given name
-                    f = open(cmdinfo['filename'], 'w')
-                    print f
+                #Create new file with given name
+                f = open(cmdinfo['filename'], 'w')
+                print f
+                
+                datasock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                print datasock
+                print cmdinfo['port']
+                datasock.bind(('',cmdinfo['port']))
+                datasock.listen(1)
+                
+                client, address = datasock.accept()
+                print client
+                
+                
+                #Receive file size
+                size=recvSize(client)
+                print size
+                
+                chunkSize = 100
+                bytesRecvd = 0
+                
+                while (bytesRecvd < size):
+                    # By default receive chunkSize bytes
+                    numToRecv = chunkSize
                     
-                    datasock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    print datasock
-                    print cmdinfo['port']
-                    datasock.bind(('',cmdinfo['port']))
-                    datasock.listen(1)
-                    
-                    client, address = datasock.accept()
-                    print client
-                    
-                    
-                    #Receive file size
-                    size=recvSize(client)
-                    print size
-                    
-                    chunkSize = 100
-                    bytesRecvd = 0
-                    
-                    while (bytesRecvd < size):
-                        # By default receive chunkSize bytes
-                        numToRecv = chunkSize
+                    # Is this the last chunk?
+                    if size - bytesRecvd < chunkSize:
+                        numToRecv = size - bytesRecvd
+                        print numToRecv
+                        # Receive the amount of data
+                        data = recvData(client, numToRecv)
+                        print data
+                        # Save the data
+                        file.write(data)
                         
-                        # Is this the last chunk?
-                        if size - bytesRecvd < chunkSize:
-                            numToRecv = size - bytesRecvd
-                            print numToRecv
-                            # Receive the amount of data
-                            data = recvData(client, numToRecv)
-                            print data
-                            # Save the data
-                            file.write(data)
-                            
-                            # Update the total number of bytes received
-                            bytesRecvd += len(data)
-                    
-                    # Transfer complete, close the file.
-                    file.close()
+                        # Update the total number of bytes received
+                        bytesRecvd += len(data)
+                # Transfer complete, close the file.
+                file.close()
 
             elif cmdinfo['cmd'] == "get":
                 #connect the datasocket to the client
