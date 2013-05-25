@@ -137,8 +137,11 @@ def recvSize(sock):
     # Get the string size
     strSize = recvData(sock, LEN_LEN)
 
-    # Conver the size to an integer and return 
-    return int(strSize)
+    # Conver the size to an integer and return
+    try:
+        return int(strSize)
+    except:
+        return None
 
 
 ########################################################################
@@ -221,9 +224,6 @@ def main(server, port):
             # Get the file name the user specified.
             filename = cmd[4:]
 
-            # Since we know the filename, open the file.
-            file = open(filename, "w")
-
             # Tell the server to send the file.
             strcmd = getCmdStr(dataport, 'get', filename)
             sendData(cmdSocket, strcmd)
@@ -233,27 +233,36 @@ def main(server, port):
 
             # Receive the size of the file from the server.
             fileSize = recvSize(client)
+            
+            if fileSize:
+                # Since we know the filename, open the file.
+                file = open(filename, 'w')
 
-            chunkSize   = 100
-            bytesRecvd    = 0
-            while (bytesRecvd < fileSize):
-                # By default receive chunkSize bytes
-                numToRecv = chunkSize
+                chunkSize   = 100
+                bytesRecvd    = 0
+                while (bytesRecvd < fileSize):
+                    # By default receive chunkSize bytes
+                    numToRecv = chunkSize
 
-                # Is this the last chunk?
-                if fileSize - bytesRecvd < chunkSize:
-                    numToRecv = fileSize - bytesRecvd
-                # Receive the amount of data
-                data = recvData(client, numToRecv)
+                    # Is this the last chunk?
+                    if fileSize - bytesRecvd < chunkSize:
+                        numToRecv = fileSize - bytesRecvd
+                    # Receive the amount of data
+                    data = recvData(client, numToRecv)
 
-                # Save the data
-                file.write(data)
+                    # Save the data
+                    file.write(data)
 
-                # Update the total number of bytes received
-                bytesRecvd += len(data)
+                    # Update the total number of bytes received
+                    bytesRecvd += len(data)
 
-            # Transfer complete, close the file.
-            file.close()
+                # Transfer complete, close the file.
+                file.close()
+
+                # Show the user the file name and file size.
+                print filename + ', ' + str(bytesRecvd) + ' bytes'
+            else:
+                print "File does not exist, try again."
 
         elif cmd[0:3] == 'put':
             filename = cmd[4:]
